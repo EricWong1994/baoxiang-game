@@ -15,6 +15,8 @@ var w =
   window.innerWidth ||
   document.documentElement.clientWidth ||
   document.body.clientWidth
+console.log('window.innerWidth: ', window.innerWidth)
+// var w = 750
 var h =
   window.innerHeight ||
   document.documentElement.clientHeight ||
@@ -46,8 +48,25 @@ c_yb.prototype.init = function () {
   this.y = -canvas.height * 2 * Math.random()
   this.x = (canvas.width + 100) * Math.random() - 5
   this.type = Math.random() > 0.5 ? 'small' : 'big'
+  this.score = this.type === 'big' ? 200 : 10
+}
+// 游戏对象-分数类
+function ScoreTip() {
+  var speed = 10,
+    x = 0,
+    y = 0
+}
+ScoreTip.prototype.init = function (text, x) {
+  this.speed = 10
+  this.y = h - ZCM_HEIGHT
+  // this.x = (canvas.width + 100) * Math.random() - 5
+  this.x = x || 0
+  // this.text = '+50'
+  this.text = text || '+50'
+  // this.type = Math.random() > 0.5 ? 'small' : 'big'
 }
 var ybs = []
+const numList = []
 
 //创建炸弹对象
 function bom() {
@@ -128,6 +147,13 @@ var ctx = canvas.getContext('2d')
 canvas.width = w
 canvas.height = h
 document.body.appendChild(canvas)
+// 背景图片
+var bgImageReady = false
+var bgImage = new Image()
+bgImage.onload = function () {
+  bgImageReady = true
+}
+bgImage.src = 'imgs2/bgImg.png'
 
 // 招财猫图片
 var zcmReady = false
@@ -200,7 +226,7 @@ var reset = function () {
 
 //更新游戏
 var update = function (modifier) {
-  // console.log('更新游戏');
+  // console.log('更新游戏')
   if (37 in keysDown) {
     // 用户按的是←
     // zcm.x > -35 ? zcm.x -= zcm.speed * modifier : zcm.x = -34;
@@ -224,7 +250,6 @@ var update = function (modifier) {
     //     zcm.x = canvas.width-70;
     // }
   }
-
   if (gtime > 0) {
     for (var i = 0; i < ybsl; i++) {
       //炸弹算法  bomB.bomb();bomB.y+=bomB.speed;
@@ -238,16 +263,27 @@ var update = function (modifier) {
       }
 
       // 分数计算-元宝算法
-      const { type } = ybs[i]
+      const { type, score } = ybs[i]
       if (ybs[i].y > canvas.height - 100) {
         if (Math.abs(zcm.x + 44 - ybs[i].x - 25) < 80) {
-          gscore += type === 'big' ? 200 : 10
+          // gscore += type === 'big' ? 200 : 10
+          gscore += score
+          console.log('score: ', score)
+          // const scoreItem = new ScoreTip()
+          // scoreItem.init(score, ybs[i].x)
+          // numList.push(scoreItem)
         }
         ybs[i].init()
       } else {
         ybs[i].y += ybs[i].speed
       }
     }
+    // numList.forEach(item => {
+    //   const { y } = item
+    //   if (y > canvas.height - 100) {
+    //     ybs[i].y -= ybs[i].speed
+    //   }
+    // })
   } else {
     gstop = true
     ybImage.src = ' ' //让元宝消失；
@@ -272,7 +308,11 @@ var render = function () {
   ctx.fillRect(0, 0, w, h)
   ctx.fillStyle = '#000'
   ctx.font = '16px Helvetica'
+
   //console.log('画出所有物体');
+  // if (bgImageReady) {
+  //   ctx.drawImage(bgImage, 0, 0)
+  // }
   if (zcmReady) {
     ctx.drawImage(zcmImage, zcm.x, zcm.y)
   }
@@ -287,6 +327,15 @@ var render = function () {
   if (bomReady) {
     ctx.drawImage(bomImage, bomB.x, bomB.y)
   }
+  // numList.forEach(item => {
+  //   const { text, x, y } = item
+  //   ctx.fillStyle = '#00F'
+  //   // ctx.fillRect(20, 20, 50, 50)
+  //   // ctx.fillText('+50分', 100, 100)
+  //   ctx.fillText(text, x, y)
+  //   ctx.fillStyle = '#000'
+  //   ctx.font = '30px Helvetica'
+  // })
 
   if (gstop) {
     var gradient = ctx.createLinearGradient(0, 0, canvas.width / 2, 0)

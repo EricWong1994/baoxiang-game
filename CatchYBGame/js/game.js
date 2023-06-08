@@ -1,9 +1,15 @@
+// const { ZCM_HEIGHT } = require('./config')
+const config = {
+  ZCM_HEIGHT: 200,
+  GAME_TIME: 3000,
+}
+const { ZCM_HEIGHT, GAME_TIME } = config
+
 /**
  * Created by Administrator on 2015/7/18 0018.
  * 根据 http://www.cnblogs.com/Wayou/p/how-to-make-a-simple-html5-canvas-game.html 改编
  * TODO 把按键玩法改变为触摸玩法
  */
-
 //获取屏幕宽度
 var w =
   window.innerWidth ||
@@ -39,6 +45,7 @@ c_yb.prototype.init = function () {
   this.speed = 10
   this.y = -canvas.height * 2 * Math.random()
   this.x = (canvas.width + 100) * Math.random() - 5
+  this.type = Math.random() > 0.5 ? 'small' : 'big'
 }
 var ybs = []
 
@@ -76,7 +83,8 @@ function touch(event) {
       // can.style.left=event.changedTouches[0].clientX+"px";
       // can.style.top=event.changedTouches[0].clientY+"px";
       // zcm.x=event.changedTouches[0].clientX+43.5;
-      zcm.y = h - 109
+      zcm.y = h - ZCM_HEIGHT
+      // zcm.y = h - 300
       if (zcm.x <= 0) {
         zcm.x = 0
       }
@@ -87,8 +95,9 @@ function touch(event) {
     case 'touchend':
       event.preventDefault()
       // oInp.innerHTML = "<br>Touch end (" + event.changedTouches[0].clientX + "," + event.changedTouches[0].clientY + ")";
-      zcm.x = event.changedTouches[0].clientX + 43.5
-      zcm.y = h - 109
+      // 禁止点击瞬间移动位置
+      // zcm.x = event.changedTouches[0].clientX + 43.5
+      zcm.y = h - ZCM_HEIGHT
       if (zcm.x <= 0) {
         zcm.x = 0
       }
@@ -102,7 +111,7 @@ function touch(event) {
       //    can.style.left=event.changedTouches[0].clientX+"px";
       // can.style.top=event.changedTouches[0].clientY+"px";
       zcm.x = event.changedTouches[0].clientX + 43.5
-      zcm.y = h - 109
+      zcm.y = h - ZCM_HEIGHT
       if (zcm.x <= 0) {
         zcm.x = 0
       }
@@ -126,23 +135,35 @@ var zcmImage = new Image()
 zcmImage.onload = function () {
   zcmReady = true
 }
-zcmImage.src = 'imgs/zcm.png'
+zcmImage.src = 'imgs2/zcm.png'
 // 元宝图片
 var ybReady = false
 var ybImage = new Image()
 ybImage.onload = function () {
   ybReady = true
 }
-ybImage.src = 'imgs/yb.png'
-
+ybImage.src = 'imgs2/yb.png'
+// 大元宝
+var big_ybReady = false
+var big_ybImage = new Image()
+big_ybImage.onload = function () {
+  big_ybReady = true
+}
+big_ybImage.src = 'imgs2/big_yb.png'
 //炸弹图片
 var bomReady = false
 var bomImage = new Image()
 bomImage.onload = function () {
   bomReady = true
 }
-bomImage.src = 'imgs/bomb.png'
-
+bomImage.src = 'imgs2/bomb.png'
+//时钟图片
+var clockImgReady = false
+var clockImage = new Image()
+clockImage.onload = function () {
+  clockImgReady = true
+}
+clockImage.src = 'imgs2/clock.png'
 //处理按键
 var keysDown = {}
 
@@ -165,11 +186,11 @@ addEventListener(
 //开始新一轮游戏
 var reset = function () {
   gstop = false
-  gtime = 30 //时间、分数重置、元宝数
+  gtime = GAME_TIME //时间、分数重置、元宝数
   gscore = 0
   ybsl = 5
   zcm.x = canvas.width / 2 - 43 //猫居中
-  zcm.y = canvas.height - 109
+  zcm.y = canvas.height - ZCM_HEIGHT
   for (var i = 0; i < ybsl; i++) {
     ybs[i] = new c_yb()
     ybs[i].init()
@@ -216,10 +237,11 @@ var update = function (modifier) {
         bomB.y += bomB.speed
       }
 
-      //元宝算法
+      // 分数计算-元宝算法
+      const { type } = ybs[i]
       if (ybs[i].y > canvas.height - 100) {
         if (Math.abs(zcm.x + 44 - ybs[i].x - 25) < 80) {
-          gscore += 10
+          gscore += type === 'big' ? 200 : 10
         }
         ybs[i].init()
       } else {
@@ -239,8 +261,8 @@ var update = function (modifier) {
 
 btn.addEventListener('click', function () {
   btn.style.display = 'none'
-  ybImage.src = 'imgs/yb.png'
-  bomImage.src = 'imgs/bomb.png'
+  ybImage.src = 'imgs2/yb.png'
+  bomImage.src = 'imgs2/bomb.png'
   reset()
 })
 //画出所有物体
@@ -256,9 +278,12 @@ var render = function () {
   }
   if (ybReady) {
     for (var i = 0; i < ybsl; i++) {
-      ctx.drawImage(ybImage, ybs[i].x, ybs[i].y)
+      // ctx.drawImage(ybImage, ybs[i].x, ybs[i].y)
+      const { type } = ybs[i]
+      ctx.drawImage(type === 'big' ? big_ybImage : ybImage, ybs[i].x, ybs[i].y)
     }
   }
+
   if (bomReady) {
     ctx.drawImage(bomImage, bomB.x, bomB.y)
   }
@@ -281,10 +306,14 @@ var render = function () {
     ctx.font = '30px Helvetica'
     ctx.fillText('分数: ' + gscore, canvas.width / 10, canvas.height / 15)
     ctx.fillText(
-      '时间: ' + gtime.toString().substring(0, 4),
+      gtime.toString().substring(0, 4),
+      // '时间: ' + gtime.toString().substring(0, 4),
       canvas.width / 3,
       canvas.height / 15
     )
+    if (clockImgReady) {
+      ctx.drawImage(clockImage, canvas.width / 3 - 100, canvas.height / 15 - 20)
+    }
   }
 }
 
